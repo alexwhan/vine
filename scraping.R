@@ -1,20 +1,30 @@
 library(httr)
 
+getAllVines <- function(userid, directory) {
 #Vine user id: 1050584674172583936
-urls <- vector("character", 546)
-dates <- vector("character", 546)
-for(i in 1:55) {
+nvids <- content(GET(paste0("https://api.vineapp.com/timelines/users/1050584674172583936")), "parsed")$data$count
+
+urls <- vector("character", nvids)
+dates <- vector("character", nvids)
+ids <- vector("character", nvids)
+for(i in 1:floor(nvids/10)) {
   # browser()
   timelineListraw <- GET(paste0("https://api.vineapp.com/timelines/users/1050584674172583936?page=", i))
   timelineList <- content(timelineListraw, "parsed")
   for(j in 1:10){
     urls[(i-1)*10 + j] <- timelineList$data$records[[j]]$videoUrl
     dates[(i-1)*10 + j] <- gsub(":", "_", timelineList$data$records[[j]]$created)
+    ids[(i-1)*10 + j] <- gsub("[0-9]+([0-9]{5}$)", "\\1", timelineList$data$records[[j]]$postId/100)
   }
 }
 
-write_mp4 <- function(url, filename) {
-  writeBin(GET(url)$content, filename)
+timelineListLast <- content(GET(paste0("https://api.vineapp.com/timelines/users/1050584674172583936?page=", ceiling(nvids/10))), "parse")
+for(j in (10*floor(nvids/10) + 1):(nvids)) {
+  urls[j] <- timelineListLast$data$records[[j - (nvids - 1)]]$videoUrl
+  dates[j] <- gsub(":", "_", timelineListLast$data$records[[j - (nvids - 1)]]$created)
+  ids[j] <- gsub("[0-9]+([0-9]{5}$)", "\\1", timelineList$data$records[[j - (nvids - 1)]]$postId/100)
 }
-write_mp4v <- Vectorize(write_mp4)
-write_mp4v(urls, paste0("videos/", dates, ".mp4"))
+
+write_mp4v(urls, paste0("videos2/", dates, ids, ".mp4"))
+
+}
